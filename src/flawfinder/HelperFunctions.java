@@ -35,6 +35,10 @@ public class HelperFunctions {
         return s1;
     }
     
+    public static String printMultiLineText(String s)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
     public static String h(String patchFileName,boolean outputFormat) {
         if(outputFormat)
           return htmlize(patchFileName);

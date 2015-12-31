@@ -18,7 +18,7 @@ public class FlawFinder {
      * @param args the command line arguments
      */
     
-    public static void ruletest()
+    public static RuleSet ruletest()
     {
         RuleSet r = new RuleSet();
         r.addRule("strcpy",
@@ -513,7 +513,8 @@ public class FlawFinder {
 
 */
         r.expandRuleSet();
-        System.out.println(r);
+//        System.out.println(r);
+        return r;
     }   
     
     public static void addRulesAndInitialize()
@@ -528,9 +529,17 @@ public class FlawFinder {
         pr.startLoadingPatchInfo();
     }
     
+    public static void fileProcessorTest() throws IOException
+    {
+        Arguments arguments = new Arguments();
+        String fileName = "/home/afif/flawfinder/flawfinder-1.31/flawtest.c";
+        FileProcessor fileProcessor = new FileProcessor(arguments,fileName,null,ruletest());
+        fileProcessor.processCFile();
+    }
     public static void main(String[] args) throws IOException {
 //        ruletest();
-        loadPatchInfoTest();
+//        loadPatchInfoTest();
+        fileProcessorTest();
 //        String ar[] = "lstrcpy|wcscpy|_tcscpy|_mbscpy".split("\\|");
 //        for(String x:ar)
 //            System.out.println(x);

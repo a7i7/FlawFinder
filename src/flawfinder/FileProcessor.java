@@ -62,6 +62,8 @@ public class FileProcessor {
         lineBegin = 1;
         codeInLine = 0;
         
+        sloc = 0;
+        
         if(patchInfo!=null && !patchInfo.containsKey(file))
         {
             if(!arguments.isQuiet())
@@ -94,7 +96,7 @@ public class FileProcessor {
         
         if(!arguments.isQuiet())
         {
-            if(!arguments.isOutputFormat())
+            if(arguments.isOutputFormat())
                 System.out.println("Examining "+HelperFunctions.htmlize(file)+"<br>");
             else
                 System.out.println("Examining "+file);
@@ -106,13 +108,17 @@ public class FileProcessor {
         {
             text = text+line+"\n";
         }
+        System.out.println(text.length());
         int i = 0;
         while(i<text.length())
         {
+//            System.out.println(i);
             Matcher m = pWhitespace.matcher(text.substring(i));
             char c,nextc;
             if(m.lookingAt())
+            {
                 i += m.end(0);
+            }
             
             if(i>=text.length())
                 c = '\n';
@@ -131,7 +137,7 @@ public class FileProcessor {
                     continue;
                 }
             }
-            
+//            System.out.println("here "+i);
             if(c=='\n')
             {
                 lineNumber = lineNumber+1;
@@ -170,6 +176,7 @@ public class FileProcessor {
             }//line 1417
             else
             {
+//                System.out.println("here "+i);
                 if(c=='/' && nextc=='*')
                 {
                     m = pDirective.matcher(text.substring(i+1));
@@ -200,36 +207,56 @@ public class FileProcessor {
                 {
                     codeInLine = 1;
                     m = pCword.matcher(text.substring(i-1));
-                    int startPos = i-1;
-                    int endPos = m.end(0);
-                    String word = text.substring(startPos,endPos);
-                    if(ruleSet.hasKey(word) && cValidMatch(text,startPos+endPos))
+                    if(m.lookingAt())
                     {
-                        if(patchInfo==null || (patchInfo.get(file)!=null && patchInfo.get(file).contains(lineNumber)))
+                        int startPos = i-1;
+                        int endPos = m.end(0);  //length actually
+                        i+=endPos-1;
+                        String word = "";
+                        word = text.substring(startPos,startPos+endPos);
+                        System.out.println(word);
+//                        System.out.println("ERROR "+startPos+" "+endPos);
+                        if(ruleSet.hasKey(word) && cValidMatch(text,startPos+endPos))
                         {
-                            //hit stuff here
+                            if(patchInfo==null || (patchInfo.get(file)!=null && patchInfo.get(file).contains(lineNumber)))
+                            {
+                                //hit stuff here
+                            }
                         }
                     }
+                    else if(c>='0' && c<='9')
+                    {
+                          while(i<text.length() && text.charAt(i) >='0' && text.charAt(i)<='9')
+                              ++i;
+                    }            
                 }
             }   
             
         }
+        if(codeInLine!=0)
+            ++sloc;
+        if(inComment!=0)
+            System.out.println("ERROR: File ended while in comment");
+        if(inString!=0)
+            System.out.println("ERROR: File ended while in string");
+                 
         
     }
 
     private void processDirective() {
-        throw new UnsupportedOperationException("Not yet implemented");
+//        throw new UnsupportedOperationException("Not yet implemented");
+        return;
     }
 
     private boolean cValidMatch(String text, int position) {
         char c;
-        String whitespaces = "\t\n\r ";
+        String whitespaces = "\f\t\n\r ";
         for(int i = position;position<text.length();i++)
         {
             c = text.charAt(i);
             if(c=='(')
                 return true;
-            else if(whitespaces.indexOf(c)!=-1)
+            else if(((int)c>=9 && (int)c<=13) || ((int)c==32))
                 ++i;
             else
             {

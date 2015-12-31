@@ -4,6 +4,8 @@
  */
 package flawfinder;
 
+import java.util.List;
+
 /**
  *Each instance of Hit is a warning of some kind in a source code file.
   See the rulesets, which define the conditions for triggering a hit.
@@ -33,4 +35,79 @@ package flawfinder;
  */
 public class Hit {
     
+    private RuleValue ruleValue;
+    private String name;
+    private int start;
+    private int end;
+    private int line;
+    private int column;
+    private String filename;
+    private String contextText;
+    private List<String> parameters;
+    private boolean extractLookahead;
+    private String lookahead;
+    private Arguments arguments;
+    private String note;
+    
+    public String toString()
+    {
+        String res = "";
+        
+        if(arguments.isOutputFormat())
+            res+="<li>";
+        
+        res+=HelperFunctions.h(filename, arguments.isOutputFormat());
+        
+        if(arguments.isShowColumns())
+            res+=":"+line+":"+column+":";
+        else
+            res+=":"+line+":";
+        
+        if(arguments.isOutputFormat())
+            res+="<b>";
+        res+=" ["+ruleValue.getLevel()+"]";
+        if(arguments.isOutputFormat())
+            res+="</b>";
+        
+        res+="("+ruleValue.getCategory()+")";
+        
+        if(arguments.isOutputFormat())
+            res+="<i>";
+        
+        String mainText = HelperFunctions.h(ruleValue.getWarning()+". ",arguments.isOutputFormat());
+        
+        if(arguments.isOutputFormat())
+            mainText = "DO SOME REGEX THING";
+        
+        
+        
+        if(arguments.isSingleLine())
+        {
+            res+=mainText;
+            if(ruleValue.getSuggestion()!=null)
+                res+=HelperFunctions.h(ruleValue.getSuggestion(), arguments.isOutputFormat())+".";
+            res+=HelperFunctions.h(note, arguments.isOutputFormat());            
+        }
+        else
+        {
+            if(ruleValue.getSuggestion()!=null)
+                mainText+=HelperFunctions.h(ruleValue.getSuggestion(), arguments.isOutputFormat())+". ";
+            mainText+=HelperFunctions.h(note, arguments.isOutputFormat());
+            res+="\n";
+            res+=HelperFunctions.printMultiLineText(mainText);          
+        }
+        
+        if(arguments.isOutputFormat())
+            res+="</i>";
+        res+="\n";
+        if(arguments.isShowContext())
+        {
+            if(arguments.isOutputFormat())
+                res+="<pre>";
+            res+=HelperFunctions.h(contextText, arguments.isOutputFormat());            
+            if(arguments.isOutputFormat())
+                res+="</pre>";
+        }
+        return res;
+    }
 }

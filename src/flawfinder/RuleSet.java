@@ -51,7 +51,7 @@ public class RuleSet {
             {
                 for(String newRule: rule.split("\\|"))
                 {
-                    System.out.println(newRule);
+//                    System.out.println(newRule);
                     if(ruleSetMap.get(newRule)!=null)
                     {
                         System.out.println("Error: Rule "+rule+" when expanded overlaps "+newRule);
