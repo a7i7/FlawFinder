@@ -4,6 +4,9 @@
  */
 package flawfinder;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  *
  * @author afif
@@ -21,10 +24,10 @@ public class Arguments {
     private boolean showImmediately;
     private boolean singleLine;
     
-    private boolean requiredRegex;
-    //private boolean required_regex_compiled; //datatype to be decided
-    
     private boolean falsePositive;
+    
+    private Pattern requiredRegex;
+    private Matcher requiredRegexCompiled;
     
     private boolean showColumns;
     
@@ -37,7 +40,28 @@ public class Arguments {
     private String saveHitList; //probably ,,
     private String diffHitList; //probably ,,
     private String patchFile; //probably ,,
-
+    
+    private static final boolean  EXTRACT_LOOKAHEAD = false;
+    private static final int MAX_LOOKAHEAD = 500;
+    
+    
+    /**
+     * 
+     * @return  MAX_LOOKAHEAD
+     */
+    public int getMaxLookahead()
+    {
+        return MAX_LOOKAHEAD;
+    }
+    
+    /**
+     * 
+     * @return the EXTRACT_LOOKAHEAD
+     */
+    public boolean isExtractLookaheadEnabled()
+    {
+        return EXTRACT_LOOKAHEAD;
+    }
     /**
      * @return the showContext
      */
@@ -164,18 +188,12 @@ public class Arguments {
         this.singleLine = singleLine;
     }
 
-    /**
-     * @return the requiredRegex
-     */
-    public boolean isRequiredRegex() {
-        return requiredRegex;
-    }
 
     /**
      * @param requiredRegex the requiredRegex to set
      */
     public void setRequiredRegex(boolean requiredRegex) {
-        this.requiredRegex = requiredRegex;
+        this.setRequiredRegex(requiredRegex);
     }
 
     /**
@@ -316,6 +334,34 @@ public class Arguments {
      */
     public void setPatchFile(String patchFile) {
         this.patchFile = patchFile;
+    }
+
+    /**
+     * @return the requiredRegex
+     */
+    public Pattern getRequiredRegex() {
+        return requiredRegex;
+    }
+
+    /**
+     * @param requiredRegex the requiredRegex to set
+     */
+    public void setRequiredRegex(Pattern requiredRegex) {
+        this.requiredRegex = requiredRegex;
+    }
+
+    /**
+     * @return the requiredRegexCompiled
+     */
+    public Matcher getRequiredRegexCompiled() {
+        return requiredRegexCompiled;
+    }
+
+    /**
+     * @param requiredRegexCompiled the requiredRegexCompiled to set
+     */
+    public void setRequiredRegexCompiled(Matcher requiredRegexCompiled) {
+        this.requiredRegexCompiled = requiredRegexCompiled;
     }
     
     

@@ -4,6 +4,9 @@
  */
 package flawfinder;
 
+import java.util.List;
+import java.util.StringTokenizer;
+
 /**
  *
  * @author afif
@@ -35,10 +38,50 @@ public class HelperFunctions {
         return s1;
     }
     
-    public static String printMultiLineText(String s)
+    public static String printMultiLineText(String text)
+    {
+        String res = "";
+        final int WIDTH = 78;
+        final String PREFIX = " ";
+        int startingPosition = PREFIX.length()+1;
+        res+=PREFIX;
+        int position = startingPosition;
+        StringTokenizer st = new StringTokenizer(text);
+        while(st.hasMoreTokens())
+        {
+            String w = st.nextToken();
+            if((w.length()+position)>=WIDTH)
+            {
+                res+="\n";
+                res+=PREFIX;
+                position = startingPosition;
+            }
+            res+=w;
+            position+=w.length()+1;
+        }
+        return res;
+    }
+    
+    public static int findColumn(String text,int position)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+    
+    public static String getContext(String text,int position)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+    
+    public static List<String> extractCParameters(String text)
+    {
+        return extractCParameters(text,0);
+    }
+    
+    public static List<String> extractCParameters(String text,int position)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
     public static String h(String patchFileName,boolean outputFormat) {
         if(outputFormat)
           return htmlize(patchFileName);
@@ -46,4 +89,6 @@ public class HelperFunctions {
             return patchFileName;
 //        throw new UnsupportedOperationException("Not yet implemented");
     }
+    
+    
 }

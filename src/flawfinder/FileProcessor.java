@@ -9,6 +9,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -37,6 +41,10 @@ public class FileProcessor {
     private static Pattern pCword = Pattern.compile("[A-Za-z_][A-Za-z_0-9$]*");
     private static Pattern pDirective = Pattern.compile("(?i)\\s*(ITS4|Flawfinder|RATS):\\s*([^\\*]*)");
     private static final int MAX_LOOKAHEAD = 500;
+    
+    private static int numIgnoredHits = 0;
+    
+    private static List<Hit> hitList = new ArrayList<Hit>();
     
     public FileProcessor(Arguments arguments,String file,  Map<String,Set<Integer> > patchInfo,RuleSet ruleSet)
     {
@@ -221,6 +229,20 @@ public class FileProcessor {
                             if(patchInfo==null || (patchInfo.get(file)!=null && patchInfo.get(file).contains(lineNumber)))
                             {
                                 //hit stuff here
+                                Hit hit = new Hit(
+                                        ruleSet.getRule(word),
+                                        word,
+                                        startPos,
+                                        endPos,
+                                        lineNumber,
+                                        HelperFunctions.findColumn(text,startPos),
+                                        file,
+                                        HelperFunctions.getContext(text,startPos),
+                                        HelperFunctions.extractCParameters(text,endPos),
+                                        arguments.isExtractLookaheadEnabled()?text.substring(startPos,startPos+arguments.getMaxLookahead()):null,
+                                        arguments,""
+                                        ); //no notes
+                                 startHooking(hit);
                             }
                         }
                     }
@@ -242,9 +264,49 @@ public class FileProcessor {
                  
         
     }
-
+    
+    private void addWarning(Hit hit)
+    {
+        if(arguments.isShowInputs() && !hit.INPUT)
+            return;
+        String warning = hit.getRuleValue().getWarning();
+        Pattern requiredRegex = arguments.getRequiredRegex();
+        if(requiredRegex!=null && !requiredRegex.matcher(warning).find())
+            return;
+        if(hit.getRuleValue().getLevel()>=arguments.getMinimumLevel())
+        {
+            if(lineNumber == ignoreLine)
+                ++numIgnoredHits;
+            else
+            {
+                hitList.add(hit);
+                if(arguments.isShowImmediately())
+                    System.out.println(hit);
+            }
+        }
+    }
+    
+    
     private void processDirective() {
-//        throw new UnsupportedOperationException("Not yet implemented");
+        
+        if(arguments.isNeverIgnore())
+            return;
+        boolean hitFound = false;
+        ListIterator<Hit> it = hitList.listIterator(hitList.size());
+        while(it.hasPrevious())
+        {
+            Hit h = it.previous();
+            if(h.getFilename().equals(file) && h.getLine()==lineNumber)
+            {
+                hitFound = true;
+                ++numIgnoredHits;
+                it.remove();
+            }
+        }
+        
+        if(!hitFound)
+            ignoreLine = lineNumber + 1;
+        
         return;
     }
 
@@ -269,6 +331,10 @@ public class FileProcessor {
             
         }
         return false;
+    }
+
+    private void startHooking(Hit hit) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
     
     
