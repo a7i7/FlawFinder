@@ -5,6 +5,7 @@
 package flawfinder;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *Each instance of Hit is a warning of some kind in a source code file.
@@ -44,12 +45,22 @@ public class Hit {
     private String filename;
     private String contextText;
     private List<String> parameters;
-    private boolean extractLookahead;
     private String lookahead;
     private Arguments arguments;
     private String note;
     
-    public static final boolean INPUT = false;
+    //extra attributes
+    private int input;
+    private int formatPosition;
+    private int sourcePosition;
+    private boolean extractLookahead;
+    private int checkForNull;
+    
+    private static final String FORMAT_POSITION_KEY = "'format_position'";
+    private static final String CHECK_FOR_NULL_KEY = "'check_for_null'";
+    private static final String INPUT_KEY = "'input'";
+    private static final String EXTRACT_LOOKAHEAD_KEY = "'extract_lookahead'";
+    private static final String SOURCE_POSITION_KEY = "'source_position'"; //not used
     
     public Hit(RuleValue ruleValue, String name, 
             int start, int end, 
@@ -57,6 +68,13 @@ public class Hit {
             String filename, String contextText,
             List<String> parameters,  String lookahead, 
             Arguments arguments, String note) {
+        this.input = 0;
+        this.formatPosition = 1;
+        this.sourcePosition = 2;
+        this.extractLookahead = false;
+        this.note = "";
+        this.filename = "";
+        
         this.ruleValue = ruleValue;
         this.name = name;
         this.start = start;
@@ -69,6 +87,20 @@ public class Hit {
         this.lookahead = lookahead;
         this.arguments = arguments;
         this.note = note;
+        
+        Map<String,Integer> other = ruleValue.getOther();
+        if(other.containsKey(FORMAT_POSITION_KEY))
+            formatPosition = other.get(FORMAT_POSITION_KEY);
+        if(other.containsKey(CHECK_FOR_NULL_KEY))
+            checkForNull = other.get(CHECK_FOR_NULL_KEY);
+        if(other.containsKey(INPUT_KEY))
+            input = other.get(INPUT_KEY);
+        if(other.containsKey(EXTRACT_LOOKAHEAD_KEY))
+            extractLookahead = other.get(EXTRACT_LOOKAHEAD_KEY)==1;
+        if(other.containsKey(SOURCE_POSITION_KEY))
+            sourcePosition = other.get(SOURCE_POSITION_KEY);
+            
+        
     }
     
     
@@ -258,7 +290,7 @@ public class Hit {
      * @param parameters the parameters to set
      */
     public void setParameters(List<String> parameters) {
-        this.parameters = parameters;
+        this.setParameters(parameters);
     }
 
     /**
@@ -315,5 +347,62 @@ public class Hit {
      */
     public void setNote(String note) {
         this.note = note;
+    }
+
+
+    /**
+     * @return the input
+     */
+    public int getInput() {
+        return input;
+    }
+
+    /**
+     * @param input the input to set
+     */
+    public void setInput(int input) {
+        this.input = input;
+    }
+
+    /**
+     * @return the formatPosition
+     */
+    public int getFormatPosition() {
+        return formatPosition;
+    }
+
+    /**
+     * @param formatPosition the formatPosition to set
+     */
+    public void setFormatPosition(int formatPosition) {
+        this.formatPosition = formatPosition;
+    }
+
+    /**
+     * @return the sourcePosition
+     */
+    public int getSourcePosition() {
+        return sourcePosition;
+    }
+
+    /**
+     * @param sourcePosition the sourcePosition to set
+     */
+    public void setSourcePosition(int sourcePosition) {
+        this.sourcePosition = sourcePosition;
+    }
+
+    /**
+     * @return the checkForNull
+     */
+    public int getCheckForNull() {
+        return checkForNull;
+    }
+
+    /**
+     * @param checkForNull the checkForNull to set
+     */
+    public void setCheckForNull(int checkForNull) {
+        this.checkForNull = checkForNull;
     }
 }

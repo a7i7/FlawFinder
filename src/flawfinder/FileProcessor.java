@@ -10,7 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -265,26 +264,6 @@ public class FileProcessor {
         
     }
     
-    private void addWarning(Hit hit)
-    {
-        if(arguments.isShowInputs() && !hit.INPUT)
-            return;
-        String warning = hit.getRuleValue().getWarning();
-        Pattern requiredRegex = arguments.getRequiredRegex();
-        if(requiredRegex!=null && !requiredRegex.matcher(warning).find())
-            return;
-        if(hit.getRuleValue().getLevel()>=arguments.getMinimumLevel())
-        {
-            if(lineNumber == ignoreLine)
-                ++numIgnoredHits;
-            else
-            {
-                hitList.add(hit);
-                if(arguments.isShowImmediately())
-                    System.out.println(hit);
-            }
-        }
-    }
     
     
     private void processDirective() {
@@ -337,5 +316,192 @@ public class FileProcessor {
         throw new UnsupportedOperationException("Not yet implemented");
     }
     
+    private void cBuffer(Hit hit)
+    {
+        String source;
+        int sourcePosition = hit.getSourcePosition();
+        List<String> parameters = hit.getParameters();
+        if(sourcePosition<=parameters.size()-1)
+        {
+            source = parameters.get(sourcePosition);
+            if(cSingletonString(source))
+            {
+                hit.getRuleValue().setLevel(1);
+                hit.setNote("Risk is low because the source is a constant character.");
+            }
+            else if(cConstantString(strip_i18n(source)))
+            {
+                int level = hit.getRuleValue().getLevel();
+                level = Math.max(1, level-2);
+                hit.getRuleValue().setLevel(level);
+                hit.setNote("Risk is low because the source is a constant string.");
+            }
+        }
+        
+    }
+
+    private boolean cSingletonString(String text) {
+        
+        Pattern pCSingletonString = Pattern.compile("^\\s*L?\"([^\\\\]|\\\\[^0-6]|\\\\[0-6]+)?\"\\s*$");
+        Matcher m = pCSingletonString.matcher(text);
+        return m.find();
+    }
+    
+    private String strip_i18n(String text)
+    {
+        Pattern getTextPattern = Pattern.compile("(?s)^\\s*gettext\\s*\\((.*)\\)\\s*$");
+        Pattern underscorePattern = Pattern.compile("(?s)^\\s*_(T(EXT)?)?\\s*\\((.*)\\)\\s*$");
+        Matcher m;
+        m = getTextPattern.matcher(text);
+        if(m.find())
+            return m.group(1).trim();
+        m = underscorePattern.matcher(text);
+        if(m.find())
+            return m.group(3).trim();
+        return text;
+    }
+
+    private boolean cConstantString(String text) {
+        
+        Pattern pCConstantString = Pattern.compile("^\\s*L?\"([^\\\\]|\\\\[^0-6]|\\\\[0-6]+)*\"$");
+        Matcher m = pCConstantString.matcher(text);
+        return m.find();
+    }
+    
+    private void cStrncat(Hit hit)
+    {
+        Pattern pDangerousStrncat = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
+        Pattern pLooksLikeConstant = Pattern.compile("^\\s*[A-Z][A-Z_$0-9]+\\s*(-\\s*1\\s*)?$");
+        Matcher m1,m2 ;
+        if(hit.getParameters().size()>3)
+        {
+            String lengthText = hit.getParameters().get(3);
+            m1 = pDangerousStrncat.matcher(lengthText);
+            m2 = pLooksLikeConstant.matcher(lengthText);
+            if(m1.find() || m2.find())
+            {
+                hit.getRuleValue().setLevel(5);
+                hit.setNote("Risk is high; the length parameter appears to be a constant, " +
+                 "instead of computing the number of characters left.");
+                addWarning(hit);
+            }
+            return;
+        }
+        cBuffer(hit);
+    }
+    
+    private void normal(Hit hit)
+    {
+        addWarning(hit);
+    }
+    
+    private void cStaticArray(Hit hit)
+    {
+        Pattern pStaticArray = Pattern.compile("^[A-Za-z_]+\\s+[A-Za-z0-9_$,\\s\\*()]+\\[[^]]");
+        Matcher m = pStaticArray.matcher(hit.getLookahead());
+        if(m.find())
+            addWarning(hit);
+    }
+    
+    private void cMultiByteToWideChar(Hit hit)
+    {
+        Pattern pDangerousMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+"  +
+                                    "\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
+        Pattern pSafeMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?" +
+                                     "/\\s*sizeof\\s*\\(\\s*?[A-Za-z_$0-9]+\\s*" +
+                                     "\\[\\s*0\\s*\\]\\)\\s*(-\\s*1\\s*)?$");
+        
+        List<String> parameters = hit.getParameters();
+        if((parameters.size()-1)>=6)
+        {
+            String numCharsToCopy = parameters.get(6);
+            Matcher m1,m2;
+            m1 = pDangerousMultiByte.matcher(numCharsToCopy);
+            m2 = pSafeMultiByte.matcher(numCharsToCopy);
+            if(m1.find())
+            {
+                hit.getRuleValue().setLevel(5);
+                hit.setNote("Risk is high, it appears that the size is given as bytes, but the " +
+                 "function requires size as characters.");
+            }
+            else if(m2.find())
+            {
+                hit.getRuleValue().setLevel(1);
+                hit.setNote("Risk is very low, the length appears to be in characters not bytes.");
+            }
+        }
+        addWarning(hit);
+    }
+    
+    private void cHitIfNull(Hit hit)
+    {
+        Pattern pNullText = Pattern.compile("^ *(NULL|0|0x0) *$");
+        int nullPosition = hit.getCheckForNull();
+        if(nullPosition<=(hit.getParameters().size()-1))
+        {
+            String nullText = hit.getParameters().get(nullPosition);
+            Matcher m = pNullText.matcher(nullText);
+            if(m.find())
+                addWarning(hit);
+            else
+                return;
+        }
+        addWarning(hit);    //doubtful about double call
+    }
+    
+    private void cPrintf(Hit hit)
+    {
+        int formatPosition = hit.getFormatPosition();
+        List<String> parameters = hit.getParameters();
+        if(formatPosition<=(parameters.size()-1))
+        {
+            String source = strip_i18n(parameters.get(formatPosition));
+            if(cConstantString(source))
+            {
+                if(hit.getName().equals("snprintf") || hit.getName().equals("vsnprintf"))
+                {
+                    hit.getRuleValue().setLevel(1);
+                    hit.getRuleValue().setWarning("On some very old systems, snprintf is incorrectly implemented " + "and permits buffer overflows; there are also incompatible "
+                            + "standard definitions of it");
+                    hit.getRuleValue().setSuggestion("Check it during installation, or use something else");
+                    hit.getRuleValue().setCategory("port");
+                }
+                else
+                {
+                    hit.getRuleValue().setLevel(0);
+                    hit.setNote("Constant format string, so not considered very risky (there's some residual risk, especially in a loop).");
+                }
+            }
+        }
+        addWarning(hit);
+    }
+    
+    private void addCScanf(Hit hit)
+    {
+        
+    }
+    private void addWarning(Hit hit)
+    {
+        if(arguments.isShowInputs() && hit.getInput()==0)
+            return;
+        Pattern requiredRegex = arguments.getRequiredRegex();
+        if(requiredRegex!=null)
+        {
+            Matcher m = requiredRegex.matcher(hit.getRuleValue().getWarning());
+            if(!m.find())
+                return;
+        }
+        if(hit.getRuleValue().getLevel()>=arguments.getMinimumLevel())
+        {
+            if(lineNumber==ignoreLine)
+                ++numIgnoredHits;
+            else
+            {
+                hitList.add(hit);
+                if(arguments.isShowImmediately())
+                    System.out.println(hit);
+            }
+        }
+    }
     
 }

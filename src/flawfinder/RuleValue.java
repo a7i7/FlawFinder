@@ -127,4 +127,21 @@ public class RuleValue {
         this.url = url;
     }
     
+    public String toString()
+    {
+        String s = hook;
+        s+="\n";
+        s+=level;
+        s+="\n";
+        s+=warning;
+        s+="\n";
+        s+=suggestion;
+        s+="\n";
+        s+=category;
+        s+="\n";
+        s+=url;
+        s+="\n";
+        s+=other;
+        return s;
+    }
 }

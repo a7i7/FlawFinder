@@ -74,11 +74,9 @@ public class RuleSet {
         String res = "";
         for(String key:ruleSetMap.keySet())
         {
-            res += key+" : "
+            res += key+" : "+"\n"
                     +
-                    ruleSetMap.get(key).getLevel()+" "+
-                    ruleSetMap.get(key).getWarning();
-            res+=" "+ruleSetMap.get(key).getOther();
+                    ruleSetMap.get(key);
             res+="\n";
         }
         return res;

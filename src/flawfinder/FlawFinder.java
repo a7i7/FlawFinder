@@ -97,7 +97,6 @@ public class FlawFinder {
       
       Map<String,Integer> other = new HashMap<String,Integer>();
       other.put("extract_lookahead",1);
-      
       r.addRule(
   "char|TCHAR|wchar_t",  // This isn't really a function call, but it works.
      new RuleValue("c_static_array", 2,
@@ -106,69 +105,85 @@ public class FlawFinder {
       "Perform bounds checking, use functions that limit length, " +
         "or ensure that the size is larger than the maximum possible length",
       "buffer", "", other));
-/*
-  "gets|_getts":
-     (normal, 5, "Does not check for buffer overflows (CWE-120, CWE-20)",
-      "Use fgets() instead", "buffer", "", {'input' : 1}),
+      
+      other = new HashMap<String,Integer>();
+      other.put("input", 1);
+  r.addRule("gets|_getts",new RuleValue
+     ("normal", 5, "Does not check for buffer overflows (CWE-120, CWE-20)",
+      "Use fgets() instead", "buffer", "", other));
 
-  # The "sprintf" hook will raise "format" issues instead if appropriate:
-  "sprintf|vsprintf|swprintf|vswprintf|_stprintf|_vstprintf":
-     (c_sprintf, 4,
+  // The "sprintf" hook will raise "format" issues instead if appropriate:
+  r.addRule("sprintf|vsprintf|swprintf|vswprintf|_stprintf|_vstprintf",
+     new RuleValue("c_sprintf", 4,
       "Does not check for buffer overflows (CWE-120)",
       "Use sprintf_s, snprintf, or vsnprintf",
-      "buffer", "", {}),
+      "buffer", "", new HashMap<String,Integer>()));
 
-  "printf|vprintf|vwprintf|vfwprintf|_vtprintf|wprintf":
-     (c_printf, 4,
+  r.addRule("printf|vprintf|vwprintf|vfwprintf|_vtprintf|wprintf",
+     new RuleValue("c_printf", 4,
       "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
       "Use a constant for the format specification",
-      "format", "", {}),
+      "format", "", new HashMap<String,Integer>()));
 
-  "fprintf|vfprintf|_ftprintf|_vftprintf|fwprintf|fvwprintf":
-     (c_printf, 4,
+  other = new HashMap<String,Integer>();
+  other.put("format_position",2);
+  r.addRule("fprintf|vfprintf|_ftprintf|_vftprintf|fwprintf|fvwprintf",
+     new RuleValue("c_printf", 4,
       "If format strings can be influenced by an attacker, they can be exploited (CWE-134)",
       "Use a constant for the format specification",
-      "format", "", { 'format_position' : 2}),
+      "format", "", other));
 
-  # The "syslog" hook will raise "format" issues.
-  "syslog":
-     (c_printf, 4,
+  // The "syslog" hook will raise "format" issues.
+  other = new HashMap<String,Integer>();
+  other.put("format_position", 2);
+  r.addRule("syslog",
+     new RuleValue("c_printf", 4,
       "If syslog's format strings can be influenced by an attacker, " +
       "they can be exploited (CWE-134)",
       "Use a constant format string for syslog",
-      "format", "", { 'format_position' : 2} ),
-
-  "snprintf|vsnprintf|_snprintf|_sntprintf|_vsntprintf":
-     (c_printf, 4,
+      "format", "", other ));
+  
+  other = new HashMap<String,Integer>();
+  other.put("format_position", 3);
+  r.addRule("snprintf|vsnprintf|_snprintf|_sntprintf|_vsntprintf",
+     new RuleValue("c_printf", 4,
       "If format strings can be influenced by an attacker, they can be " +
       "exploited, and note that sprintf variations do not always \\0-terminate (CWE-134)",
       "Use a constant for the format specification",
-      "format", "", { 'format_position' : 3}),
+      "format", "", other));
 
-  "scanf|vscanf|wscanf|_tscanf|vwscanf":
-     (c_scanf, 4,
+  
+  other = new HashMap<String,Integer>();
+  other.put("input", 1);
+  r.addRule("scanf|vscanf|wscanf|_tscanf|vwscanf",
+     new RuleValue("c_scanf", 4,
       "The scanf() family's %s operation, without a limit specification, " +
         "permits buffer overflows (CWE-120, CWE-20)",
       "Specify a limit to %s, or use a different input function",
-      "buffer", "", {'input' : 1}),
+      "buffer", "", other));
 
-  "fscanf|sscanf|vsscanf|vfscanf|_ftscanf|fwscanf|vfwscanf|vswscanf":
-     (c_scanf, 4,
-      "The scanf() family's %s operation, without a limit specification, "
+   other = new HashMap<String,Integer>();
+   other.put("input",1);
+   other.put("format_position",2);
+   r.addRule("fscanf|sscanf|vsscanf|vfscanf|_ftscanf|fwscanf|vfwscanf|vswscanf",
+     new RuleValue("c_scanf", 4,
+      "The scanf() family's %s operation, without a limit specification, "+
       "permits buffer overflows (CWE-120, CWE-20)",
       "Specify a limit to %s, or use a different input function",
-      "buffer", "", {'input' : 1, 'format_position' : 2}),
-
-  "strlen|wcslen|_tcslen|_mbslen" :
-     (normal,
-      1, # Often this isn't really a risk, and even when, it usually at worst causes
-      # program crash (and nothing worse).
+      "buffer", "", other));
+  
+  other = new HashMap<String,Integer>();
+  r.addRule("strlen|wcslen|_tcslen|_mbslen" ,
+     new RuleValue("normal",
+      1, // Often this isn't really a risk, and even when, it usually at worst causes
+      // program crash (and nothing worse).
       "Does not handle strings that are not \\0-terminated; " +
       "if given one it may perform an over-read (it could cause a crash " +
          "if unprotected) (CWE-126)",
       "",
-      "buffer", "", {}),
+      "buffer", "", other));
 
+      /*
   "MultiByteToWideChar" : # Windows
      (c_multi_byte_to_wide_char,
       2, # Only the default - this will be changed in many cases.
@@ -539,10 +554,13 @@ public class FlawFinder {
     public static void main(String[] args) throws IOException {
 //        ruletest();
 //        loadPatchInfoTest();
-        fileProcessorTest();
+//        fileProcessorTest();
 //        String ar[] = "lstrcpy|wcscpy|_tcscpy|_mbscpy".split("\\|");
 //        for(String x:ar)
 //            System.out.println(x);
         // TODO code application logic here
+        RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
+        r.expandRuleSet();
+        System.out.println(r);
     }
 }
