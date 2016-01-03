@@ -4,8 +4,13 @@
  */
 package flawfinder;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -547,11 +552,52 @@ public class FlawFinder {
     public static void fileProcessorTest() throws IOException
     {
         Arguments arguments = new Arguments();
-        String fileName = "/home/afif/flawfinder/flawfinder-1.31/flawtest.c";
-        FileProcessor fileProcessor = new FileProcessor(arguments,fileName,null,ruletest());
+        String fileName = "/home/afif/flawfinder/flawfinder-1.31/test.c";
+        RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
+        r.expandRuleSet();
+        
+        BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)));
+        String text="",line;
+        while((line=input.readLine())!=null)
+        {
+            text = text+line+"\n";
+        }
+        System.out.println(text.length());
+        FileProcessor fileProcessor = new FileProcessor(arguments,fileName,null,r);
         fileProcessor.processCFile();
+//        boolean ans = fileProcessor.cValidMatch(text,3246);
+//        System.out.println(ans);
+    }
+    
+    public static void cExtractParametersTest() throws FileNotFoundException, IOException
+    {   //works perfectly when tested agains python code
+        String fileName = "/home/afif/flawfinder/flawfinder-1.31/test.c";
+        String text = "";
+        String line;
+        BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)));
+        while((line=input.readLine())!=null)
+        {
+            text = text+line+"\n";
+        }
+        System.out.println(text.length());
+        int endpos = 0;
+        List<String> param = HelperFunctions.extractCParameters(text, endpos,false);
+        for(String x:param)
+            System.out.println(x.length());
+        return;
     }
     public static void main(String[] args) throws IOException {
+//            cExtractParametersTest();
+        fileProcessorTest();
+          
+//          String text = "a";
+//          for(int i=0;i<text.length()+10;i++)
+//          {
+////              System.out.println(i);
+////              HelperFunctions.getContext(text, i);
+//              System.out.println(i+"\t"+HelperFunctions.getContext(text, i));
+//          }
+//            System.out.println(i+" "+HelperFunctions.getContext(text,i));
 //        ruletest();
 //        loadPatchInfoTest();
 //        fileProcessorTest();
@@ -559,8 +605,8 @@ public class FlawFinder {
 //        for(String x:ar)
 //            System.out.println(x);
         // TODO code application logic here
-        RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
-        r.expandRuleSet();
-        System.out.println(r);
+//        RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
+//        r.expandRuleSet();
+//        System.out.println(r);
     }
 }

@@ -9,10 +9,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -71,22 +75,151 @@ public class HelperFunctions {
     
     public static int findColumn(String text,int position)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        try
+        {
+            text = text.substring(0,position);
+        }
+        catch(StringIndexOutOfBoundsException e)
+        {
+            //amen
+        }
+        int newLineIndex = text.lastIndexOf('\n');
+        if(newLineIndex==-1)
+            return position+1;
+        else
+            return position-newLineIndex;
     }
+    
+    
     
     public static String getContext(String text,int position)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        position = Math.min(text.length()-1,position);
+        String lineStartSubstring = text.substring(0,position+1);
+        String lineEndSubstring = text.substring(position);
+        int lineStart = lineStartSubstring.lastIndexOf('\n')+1;
+        int lineEnd = lineEndSubstring.indexOf('\n');
+        if(lineEnd == -1)
+        {
+            return text.substring(lineStart);
+        }
+        else
+        {
+            lineEnd+=position;
+            if(lineEnd<lineStart)
+                return "";
+            return text.substring(lineStart,lineEnd);
+        }
     }
     
-    public static List<String> extractCParameters(String text)
+    public static List<String> extractCParameters(String text,boolean outputFormatEnabled)
     {
-        return extractCParameters(text,0);
+        return extractCParameters(text,0,outputFormatEnabled);
     }
     
-    public static List<String> extractCParameters(String text,int position)
+    public static List<String> extractCParameters(String text,int position,boolean outputFormatEnabled)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        int i = position;
+        char whitespaces[] = {9,10,11,12,13,32};
+        Pattern tralingBackslashes = Pattern.compile("(\\s|\\\\(\\n|\\r))*$");
+        if(i<text.length())
+        {
+            while(i<text.length())
+            {
+                if(text.charAt(i)=='(')
+                    break;
+                else if(Arrays.asList(whitespaces).contains(text.charAt(i)))
+                    ++i;
+                else
+                    return new ArrayList<String>();
+            }
+        }
+        else
+            return new ArrayList<String>();
+        ++i;
+        List<String> parameters = new ArrayList<String>();
+        parameters.add("");
+        int currentStart = i;
+        int parenLevel = 1;
+        int inString = 0;
+        int inComment = 0;
+        
+        while(i<text.length())
+        {
+            char c = text.charAt(i);
+            if(inString!=0)
+            {
+                if(c=='"' && inString==1)
+                    inString = 0;
+                else if(c=='\'' && inString==2)
+                    inString = 0;
+                else if(c=='\\')
+                    ++i;
+            }
+            else if(inComment!=0)
+            {
+                if(c=='*' && text.charAt(i)=='*' && text.charAt(i+1)=='/')
+                {
+                    inComment = 0;
+                    ++i;
+                }
+            }
+            else
+            {
+                if(c=='"')
+                    inString = 1;
+                else if(c=='\'')
+                    inString = 2;
+                else if(c=='/' && text.charAt(i)=='/' && text.charAt(i+1)=='*')
+                {
+                    inComment = 1;
+                    ++i;
+                }
+                else if(c=='/' && text.charAt(i)=='/' && text.charAt(i+1)=='/')
+                {
+                    while(i<text.length() && text.charAt(i)!='\n')
+                        ++i;
+                }
+                else if(c=='\\' && text.charAt(i)=='\\' && text.charAt(i+1)=='"')
+                    ++i;
+                else if(c=='(')
+                    ++parenLevel;
+                else if(c==',' && parenLevel==1)
+                {
+                    String subText = "";
+                    if(i>currentStart)
+                        subText = text.substring(currentStart,i);
+                    Matcher m = tralingBackslashes.matcher(subText);
+                    subText = m.replaceAll("").trim();
+                    parameters.add(subText);
+                    //DO REGEX THING parameters.append
+                    currentStart = i+1;
+                }
+                else if(c==')')
+                {
+                    --parenLevel;
+                    if(parenLevel<=0)
+                    {
+                        String subText = "";
+                        if(i>currentStart)
+                            subText = text.substring(currentStart,i);
+                        Matcher m = tralingBackslashes.matcher(subText);
+                        subText = m.replaceAll("").trim();
+                        parameters.add(subText);
+                        return parameters;
+                    }
+                }
+                else if(c==';')
+                {
+                    System.out.println(h("Parsing failed to find end of parameter list; "+
+                        "semicolon terminated it in) "+text.substring(position,position+200),outputFormatEnabled));
+                    return parameters;
+                }
+            }
+            ++i;
+        }
+        System.out.println(h("Parsing failed to find end of parameter list in "+text.substring(position,position+200),outputFormatEnabled));
+        return null;
     }
 
     public static String h(String patchFileName,boolean outputFormat) {

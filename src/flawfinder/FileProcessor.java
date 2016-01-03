@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -221,12 +222,17 @@ public class FileProcessor {
                         i+=endPos-1;
                         String word = "";
                         word = text.substring(startPos,startPos+endPos);
-                        System.out.println(word);
+//                        System.out.println(word);
+//                        System.out.println(startPos+endPos);
+//                        System.out.println(cValidMatch(text,startPos+endPos));
 //                        System.out.println("ERROR "+startPos+" "+endPos);
+//                        System.out.print(" "+ruleSet.hasKey(word)+" ");
                         if(ruleSet.hasKey(word) && cValidMatch(text,startPos+endPos))
                         {
+                            
                             if(patchInfo==null || (patchInfo.get(file)!=null && patchInfo.get(file).contains(lineNumber)))
                             {
+//                                System.out.print(" HAS");
                                 //hit stuff here
                                 Hit hit = new Hit(
                                         ruleSet.getRule(word),
@@ -237,13 +243,16 @@ public class FileProcessor {
                                         HelperFunctions.findColumn(text,startPos),
                                         file,
                                         HelperFunctions.getContext(text,startPos),
-                                        HelperFunctions.extractCParameters(text,endPos),
+                                        HelperFunctions.extractCParameters(text,endPos,arguments.isOutputFormat()),
                                         arguments.isExtractLookaheadEnabled()?text.substring(startPos,startPos+arguments.getMaxLookahead()):null,
                                         arguments,""
                                         ); //no notes
-                                 startHooking(hit);
+                                 System.out.println("SHOWING HIT:"+word);
+                                 System.out.println(hit);
+//                                 startHooking(hit);
                             }
                         }
+//                        System.out.println("");
                     }
                     else if(c>='0' && c<='9')
                     {
@@ -289,16 +298,22 @@ public class FileProcessor {
         return;
     }
 
-    private boolean cValidMatch(String text, int position) {
+    protected boolean cValidMatch(String text, int position) {
         char c;
-        String whitespaces = "\f\t\n\r ";
-        for(int i = position;position<text.length();i++)
+        int i;
+        Integer whitespaces[] = {9,10,11,12,13,32};
+//        System.out.println(text.length());
+//        System.out.println(position<text.length());
+        for(i = position;i<text.length();)
         {
             c = text.charAt(i);
+//            System.out.println(i+" "+(int)c);
             if(c=='(')
                 return true;
-            else if(((int)c>=9 && (int)c<=13) || ((int)c==32))
+            else if(Arrays.asList(whitespaces).contains((int)c))
+            {
                 ++i;
+            }
             else
             {
                 if(arguments.isFalsePositive())
@@ -476,10 +491,87 @@ public class FileProcessor {
         addWarning(hit);
     }
     
-    private void addCScanf(Hit hit)
+    private void cScanf(Hit hit)
     {
-        
+        int formatPosition = hit.getFormatPosition();
+        List<String> parameters = hit.getParameters();
+        Pattern pDangerousScanfFormat = Pattern.compile("%s");
+        Pattern pLowRiskScanfFormat = Pattern.compile("%[0-9]+s");
+        if(formatPosition<=parameters.size()-1)
+        {
+            String source = strip_i18n(parameters.get(formatPosition));
+            if(cConstantString(source))
+            {
+                Matcher m1 = pDangerousScanfFormat.matcher(source);
+                Matcher m2 = pLowRiskScanfFormat.matcher(source);
+                if(m1.find())
+                    ;//pass
+                else if(m2.find())
+                {
+                    hit.getRuleValue().setLevel(1);
+                    hit.getRuleValue().setWarning("It's unclear if the %s limit in the format string is small enough (CWE-120)");
+                    hit.getRuleValue().setSuggestion("Check that the limit is sufficiently small, or use a different input function");
+                }
+                else
+                {
+                    hit.getRuleValue().setLevel(0);
+                    hit.setNote("No risky scanf format detected");
+                }
+            }
+            else
+                hit.setNote("If the scanf format is influenceable by an attacker, it's exploitable.");
+        }
+        addWarning(hit);
     }
+    
+    private void cSprintf(Hit hit)
+    {
+        int sourcePosition = hit.getSourcePosition();
+        List<String> parameters = hit.getParameters();
+        Pattern pDangerousSprintfFormat = Pattern.compile("%-?([0-9]+|\\*)?s");
+        if(parameters==null)
+        {
+            hit.getRuleValue().setWarning("format string parameter problem");
+            hit.getRuleValue().setSuggestion("Check if required parameters present and quotes close.");
+            hit.getRuleValue().setLevel(4);
+            hit.getRuleValue().setCategory("format");
+            hit.getRuleValue().setUrl("");
+        }
+        else if(sourcePosition<=parameters.size()-1)
+        {
+            String source = parameters.get(sourcePosition);
+            if(cSingletonString(source))
+            {
+                hit.getRuleValue().setLevel(1);
+                hit.setNote("Risk is low because the source is a constant character.");
+            }
+            else
+            {
+                source = strip_i18n(source);
+                if(cConstantString(source))
+                {
+                    Matcher m = pDangerousSprintfFormat.matcher(source);
+                    if(m.find())
+                    {
+                        int level = hit.getRuleValue().getLevel();
+                        level = Math.max(level-2, 1);
+                        hit.getRuleValue().setLevel(level);
+                        hit.setNote("Risk is low because the source has a constant maximum length.");
+                    }
+                    else
+                    {
+                        hit.getRuleValue().setWarning("Potential format string problem (CWE-134)");
+                        hit.getRuleValue().setSuggestion("Make format string constant");
+                        hit.getRuleValue().setLevel(4);
+                        hit.getRuleValue().setCategory("format");
+                        hit.getRuleValue().setUrl("");
+                    }
+                }
+            }
+        }
+        addWarning(hit);
+    }
+    
     private void addWarning(Hit hit)
     {
         if(arguments.isShowInputs() && hit.getInput()==0)

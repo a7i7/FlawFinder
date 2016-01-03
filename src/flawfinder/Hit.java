@@ -129,7 +129,7 @@ public class Hit {
         
         if(getArguments().isOutputFormat())
             res+="<i>";
-        
+        res+="("+getName()+")";
         String mainText = HelperFunctions.h(getRuleValue().getWarning()+". ",getArguments().isOutputFormat());
         
         if(getArguments().isOutputFormat())
