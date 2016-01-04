@@ -44,7 +44,33 @@ public class Arguments {
     private static final boolean  EXTRACT_LOOKAHEAD = false;
     private static final int MAX_LOOKAHEAD = 500;
     
-    
+    public Arguments()
+    {
+        this.showContext = false;
+        this.minimumLevel = 1;
+        this.showImmediately = false;
+        this.showInputs = false;
+        this.falsePositive = false;
+        this.allowLink = false;
+        this.skipDotDir = true;
+        
+        this.showColumns = false;
+        this.neverIgnore = false;
+        this.listRules = false;
+        this.patchFile = "";
+        this.loadHitList = null;
+        this.saveHitList = null;
+        this.diffHitList = null;
+        this.quiet = false;
+        this.showHeading = true;
+        this.outputFormat = false;
+        this.singleLine = false;
+        this.omitTime = false;
+        this.requiredRegex = null;
+        this.requiredRegexCompiled  = null;
+        
+        
+    }
     /**
      * 
      * @return  MAX_LOOKAHEAD

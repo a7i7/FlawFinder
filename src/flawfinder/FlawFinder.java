@@ -555,14 +555,22 @@ public class FlawFinder {
         String fileName = "/home/afif/flawfinder/flawfinder-1.31/test.c";
         RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
         r.expandRuleSet();
-        
+//        String a1 = "lstrcpy";
+//        String a2 = "wcscpy";
+//        System.out.println(r.getRule(a1).getLevel());
+//        System.out.println(r.getRule(a2).getLevel());
+//        r.getRule(a1).setLevel(1);
+//        System.out.println(r.getRule(a1).getLevel());
+//        System.out.println(r.getRule(a2).getLevel());
+//        if(true)
+//            return;
         BufferedReader input = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)));
         String text="",line;
         while((line=input.readLine())!=null)
         {
             text = text+line+"\n";
         }
-        System.out.println(text.length());
+//        System.out.println(text.length());
         FileProcessor fileProcessor = new FileProcessor(arguments,fileName,null,r);
         fileProcessor.processCFile();
 //        boolean ans = fileProcessor.cValidMatch(text,3246);

@@ -4,6 +4,7 @@
  */
 package flawfinder;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,6 +29,21 @@ public class RuleValue {
        this.category = category;
        this.url = unknown;
        this.other = other;
+    }
+
+    RuleValue(RuleValue oldRuleValue) {
+        this.hook = oldRuleValue.hook;
+        this.level = oldRuleValue.level;
+        this.warning = oldRuleValue.warning;
+        this.suggestion = oldRuleValue.suggestion;
+        this.category = oldRuleValue.category;
+        this.url = oldRuleValue.url;
+        this.other = new HashMap<String,Integer>();
+        for(String key:oldRuleValue.other.keySet())
+        {
+            int value = oldRuleValue.other.get(key);
+            this.other.put(key, new Integer(value));
+        }
     }
     /**
      * @return the hook
@@ -54,6 +70,11 @@ public class RuleValue {
      * @param level the level to set
      */
     public void setLevel(int level) {
+        if(level==0)
+        {
+            System.out.println("BWAHA");
+//            System.exit(0);
+        }
         this.level = level;
     }
 

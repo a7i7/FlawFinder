@@ -243,13 +243,25 @@ public class FileProcessor {
                                         HelperFunctions.findColumn(text,startPos),
                                         file,
                                         HelperFunctions.getContext(text,startPos),
-                                        HelperFunctions.extractCParameters(text,endPos,arguments.isOutputFormat()),
+                                        HelperFunctions.extractCParameters(text,startPos+endPos,arguments.isOutputFormat()),
                                         arguments.isExtractLookaheadEnabled()?text.substring(startPos,startPos+arguments.getMaxLookahead()):null,
                                         arguments,""
                                         ); //no notes
-                                 System.out.println("SHOWING HIT:"+word);
-                                 System.out.println(hit);
-//                                 startHooking(hit);
+                                if(hit.isExtractLookahead())
+                                    hit.setLookahead(text.substring(startPos,startPos+MAX_LOOKAHEAD));
+//                                   System.out.println(hit.getRuleValue().getHook());
+//                                   System.out.println(text.length());
+//                                   System.out.println(startPos+endPos);
+//                                   System.out.println(hit.getParameters().size());
+//                                 System.out.println("SHOWING HIT:"+word);
+//                                 System.out.println(hit);
+                                 if(hit.getRuleValue().getLevel()==0)
+                                 {
+                                     System.out.println("~@~@~@~@~@~@");
+                                     System.exit(0);
+                                 }
+                                 startHooking(hit);
+//                                 System.out.println(hitList.size());
                             }
                         }
 //                        System.out.println("");
@@ -269,14 +281,20 @@ public class FileProcessor {
             System.out.println("ERROR: File ended while in comment");
         if(inString!=0)
             System.out.println("ERROR: File ended while in string");
-                 
         
+        System.out.println("~~~~~~~~~~~~~~~");
+        for (Hit h:hitList)
+        {
+            System.out.println(h);
+        }
+        System.out.println(hitList.size());
     }
     
     
     
     private void processDirective() {
-        
+         
+//        System.exit(0);
         if(arguments.isNeverIgnore())
             return;
         boolean hitFound = false;
@@ -328,11 +346,46 @@ public class FileProcessor {
     }
 
     private void startHooking(Hit hit) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        
+        String hook = hit.getRuleValue().getHook();
+        final String C_MULTI_BYTE_TO_WIDE_CHAR = "c_multi_byte_to_wide_char";
+        final String C_STATIC_ARRAY = "c_static_array";
+        final String C_HIT_IF_NULL = "c_hit_if_null";
+        final String NORMAL = "normal";
+        final String C_PRINTF = "c_printf";
+        final String C_SCANF = "c_scanf";
+        final String C_STRNCAT = "c_strncat";
+        final String C_BUFFER = "c_buffer";
+        final String C_SPRINTF = "c_sprintf";
+        
+        if(hook.equals(C_MULTI_BYTE_TO_WIDE_CHAR))
+            cMultiByteToWideChar(hit);
+        else if(hook.equals(C_STATIC_ARRAY))
+            cStaticArray(hit);
+        else if(hook.equals(C_HIT_IF_NULL))
+            cHitIfNull(hit);
+        else if(hook.equals(NORMAL))
+            normal(hit);
+        else if(hook.equals(C_PRINTF))
+            cPrintf(hit);
+        else if(hook.equals(C_SCANF))
+            cScanf(hit);
+        else if(hook.equals(C_STRNCAT))
+            cStrncat(hit);
+        else if(hook.equals(C_BUFFER))
+            cBuffer(hit);
+        else if(hook.equals(C_SPRINTF))
+            cSprintf(hit);
+        else
+        {
+            System.out.println("NO EQUIVALENT HOOK FOUND!!! "+hook);
+        }
+        return;
     }
     
     private void cBuffer(Hit hit)
     {
+        System.out.println("c_buffer");
         String source;
         int sourcePosition = hit.getSourcePosition();
         List<String> parameters = hit.getParameters();
@@ -352,7 +405,7 @@ public class FileProcessor {
                 hit.setNote("Risk is low because the source is a constant string.");
             }
         }
-        
+        addWarning(hit);
     }
 
     private boolean cSingletonString(String text) {
@@ -385,9 +438,11 @@ public class FileProcessor {
     
     private void cStrncat(Hit hit)
     {
+        System.out.println("c_strncat");
         Pattern pDangerousStrncat = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
         Pattern pLooksLikeConstant = Pattern.compile("^\\s*[A-Z][A-Z_$0-9]+\\s*(-\\s*1\\s*)?$");
         Matcher m1,m2 ;
+        System.out.print(hit.getParameters().size()+" ");
         if(hit.getParameters().size()>3)
         {
             String lengthText = hit.getParameters().get(3);
@@ -395,31 +450,40 @@ public class FileProcessor {
             m2 = pLooksLikeConstant.matcher(lengthText);
             if(m1.find() || m2.find())
             {
+                System.out.println("true");
                 hit.getRuleValue().setLevel(5);
                 hit.setNote("Risk is high; the length parameter appears to be a constant, " +
                  "instead of computing the number of characters left.");
                 addWarning(hit);
+                return;
             }
-            return;
+            else
+                System.out.println("false");
         }
+        else
+            System.out.println("false");
         cBuffer(hit);
     }
     
     private void normal(Hit hit)
     {
+        System.out.println("normal");
         addWarning(hit);
     }
     
     private void cStaticArray(Hit hit)
     {
+        System.out.println("c_static_array");
         Pattern pStaticArray = Pattern.compile("^[A-Za-z_]+\\s+[A-Za-z0-9_$,\\s\\*()]+\\[[^]]");
-        Matcher m = pStaticArray.matcher(hit.getLookahead());
+        Matcher m;
+        m = pStaticArray.matcher(hit.getLookahead());
         if(m.find())
             addWarning(hit);
     }
     
     private void cMultiByteToWideChar(Hit hit)
     {
+        System.out.println("c_multi_byte_to_wide_char");
         Pattern pDangerousMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+"  +
                                     "\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
         Pattern pSafeMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?" +
@@ -450,6 +514,7 @@ public class FileProcessor {
     
     private void cHitIfNull(Hit hit)
     {
+        System.out.println("c_hit_if_null");
         Pattern pNullText = Pattern.compile("^ *(NULL|0|0x0) *$");
         int nullPosition = hit.getCheckForNull();
         if(nullPosition<=(hit.getParameters().size()-1))
@@ -466,11 +531,15 @@ public class FileProcessor {
     
     private void cPrintf(Hit hit)
     {
+        System.out.println("c_printf");
         int formatPosition = hit.getFormatPosition();
         List<String> parameters = hit.getParameters();
         if(formatPosition<=(parameters.size()-1))
         {
             String source = strip_i18n(parameters.get(formatPosition));
+            System.out.println(source);
+            System.out.println(cConstantString(source));
+            System.out.println(hit.getRuleValue().getLevel());
             if(cConstantString(source))
             {
                 if(hit.getName().equals("snprintf") || hit.getName().equals("vsnprintf"))
@@ -488,11 +557,13 @@ public class FileProcessor {
                 }
             }
         }
+        System.out.println(hit.getRuleValue().getLevel());
         addWarning(hit);
     }
     
     private void cScanf(Hit hit)
     {
+        System.out.println("c_scanf");
         int formatPosition = hit.getFormatPosition();
         List<String> parameters = hit.getParameters();
         Pattern pDangerousScanfFormat = Pattern.compile("%s");
@@ -526,9 +597,11 @@ public class FileProcessor {
     
     private void cSprintf(Hit hit)
     {
+        System.out.println("c_sprintf");
         int sourcePosition = hit.getSourcePosition();
         List<String> parameters = hit.getParameters();
         Pattern pDangerousSprintfFormat = Pattern.compile("%-?([0-9]+|\\*)?s");
+//        System.out.println("SOURCE : "+parameters.get(sourcePosition));
         if(parameters==null)
         {
             hit.getRuleValue().setWarning("format string parameter problem");
@@ -540,6 +613,7 @@ public class FileProcessor {
         else if(sourcePosition<=parameters.size()-1)
         {
             String source = parameters.get(sourcePosition);
+//            System.out.println(cSingletonString(source));
             if(cSingletonString(source))
             {
                 hit.getRuleValue().setLevel(1);
@@ -551,7 +625,7 @@ public class FileProcessor {
                 if(cConstantString(source))
                 {
                     Matcher m = pDangerousSprintfFormat.matcher(source);
-                    if(m.find())
+                    if(!m.find())
                     {
                         int level = hit.getRuleValue().getLevel();
                         level = Math.max(level-2, 1);
@@ -574,6 +648,7 @@ public class FileProcessor {
     
     private void addWarning(Hit hit)
     {
+        System.out.println("add_warning");
         if(arguments.isShowInputs() && hit.getInput()==0)
             return;
         Pattern requiredRegex = arguments.getRequiredRegex();

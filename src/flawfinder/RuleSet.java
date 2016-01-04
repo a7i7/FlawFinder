@@ -57,7 +57,9 @@ public class RuleSet {
                         System.out.println("Error: Rule "+rule+" when expanded overlaps "+newRule);
                         System.exit(1);
                     }
-                    ruleSetMap.put(newRule, ruleSetMap.get(rule));
+                    RuleValue copyRuleValue = new RuleValue(ruleSetMap.get(rule)); 
+                    ruleSetMap.put(newRule, copyRuleValue);
+//                    ruleSetMap.put(newRule, ruleSetMap.get(rule));
 //                    System.out.println("Put "+newRule);
                 }
                 ruleSetMap.remove(rule);

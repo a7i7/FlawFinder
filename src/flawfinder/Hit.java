@@ -75,7 +75,7 @@ public class Hit {
         this.note = "";
         this.filename = "";
         
-        this.ruleValue = ruleValue;
+        this.ruleValue = new RuleValue(ruleValue);
         this.name = name;
         this.start = start;
         this.end = end;
@@ -99,15 +99,18 @@ public class Hit {
             extractLookahead = other.get(EXTRACT_LOOKAHEAD_KEY)==1;
         if(other.containsKey(SOURCE_POSITION_KEY))
             sourcePosition = other.get(SOURCE_POSITION_KEY);
-            
         
     }
     
     
     
+    @Override
     public String toString()
     {
         String res = "";
+        
+//        if(true)
+//            return getRuleValue().getWarning();
         
         if(getArguments().isOutputFormat())
             res+="<li>";
@@ -129,8 +132,9 @@ public class Hit {
         
         if(getArguments().isOutputFormat())
             res+="<i>";
-        res+="("+getName()+")";
+        res+=""+getName()+":";
         String mainText = HelperFunctions.h(getRuleValue().getWarning()+". ",getArguments().isOutputFormat());
+        
         
         if(getArguments().isOutputFormat())
             mainText = "DO SOME REGEX THING";
@@ -150,14 +154,16 @@ public class Hit {
                 mainText+=HelperFunctions.h(getRuleValue().getSuggestion(), getArguments().isOutputFormat())+". ";
             mainText+=HelperFunctions.h( getNote(), getArguments().isOutputFormat());
             res+="\n";
-            res+=HelperFunctions.printMultiLineText(mainText);          
+            res+=HelperFunctions.printMultiLineText(mainText);
         }
+        
         
         if(getArguments().isOutputFormat())
             res+="</i>";
         res+="\n";
         if(getArguments().isShowContext())
         {
+            System.exit(0);
             if(getArguments().isOutputFormat())
                 res+="<pre>";
             res+=HelperFunctions.h( getContextText(), getArguments().isOutputFormat());            

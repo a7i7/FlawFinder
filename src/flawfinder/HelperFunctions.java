@@ -55,7 +55,7 @@ public class HelperFunctions {
         final int WIDTH = 78;
         final String PREFIX = " ";
         int startingPosition = PREFIX.length()+1;
-        res+=PREFIX;
+        res+=PREFIX+" ";
         int position = startingPosition;
         StringTokenizer st = new StringTokenizer(text);
         while(st.hasMoreTokens())
@@ -64,10 +64,10 @@ public class HelperFunctions {
             if((w.length()+position)>=WIDTH)
             {
                 res+="\n";
-                res+=PREFIX;
+                res+=PREFIX+" ";
                 position = startingPosition;
             }
-            res+=w;
+            res+=w+" ";
             position+=w.length()+1;
         }
         return res;
@@ -120,7 +120,7 @@ public class HelperFunctions {
     public static List<String> extractCParameters(String text,int position,boolean outputFormatEnabled)
     {
         int i = position;
-        char whitespaces[] = {9,10,11,12,13,32};
+        Integer whitespaces[] = {9,10,11,12,13,32};
         Pattern tralingBackslashes = Pattern.compile("(\\s|\\\\(\\n|\\r))*$");
         if(i<text.length())
         {
@@ -128,7 +128,7 @@ public class HelperFunctions {
             {
                 if(text.charAt(i)=='(')
                     break;
-                else if(Arrays.asList(whitespaces).contains(text.charAt(i)))
+                else if(Arrays.asList(whitespaces).contains((int)text.charAt(i)))
                     ++i;
                 else
                     return new ArrayList<String>();
