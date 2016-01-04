@@ -248,7 +248,14 @@ public class FileProcessor {
                                         arguments,""
                                         ); //no notes
                                 if(hit.isExtractLookahead())
-                                    hit.setLookahead(text.substring(startPos,startPos+MAX_LOOKAHEAD));
+                                {
+                                    System.out.println(startPos);
+                                    if((startPos+MAX_LOOKAHEAD)>text.length())
+                                        hit.setLookahead(text.substring(startPos));
+                                    else
+                                        hit.setLookahead(text.substring(startPos,startPos+MAX_LOOKAHEAD));
+                                        
+                                }
 //                                   System.out.println(hit.getRuleValue().getHook());
 //                                   System.out.println(text.length());
 //                                   System.out.println(startPos+endPos);
@@ -259,6 +266,15 @@ public class FileProcessor {
                                  {
                                      System.out.println("~@~@~@~@~@~@");
                                      System.exit(0);
+                                 }
+                                 
+                                 if(!true)
+                                 {
+                                    System.out.print("FF:: ");
+                                    System.out.print(hit.getLine()+" ");
+                                    System.out.print(hit.getRuleValue().getLevel()+" ");
+                                    System.out.print(hit.getRuleValue().getCategory()+" ");
+                                    System.out.println(hit.getName());
                                  }
                                  startHooking(hit);
 //                                 System.out.println(hitList.size());
@@ -286,6 +302,10 @@ public class FileProcessor {
         for (Hit h:hitList)
         {
             System.out.println(h);
+//            System.out.print(h.getLine()+" ");
+//            System.out.print(h.getRuleValue().getLevel()+" ");
+//            System.out.print(h.getRuleValue().getCategory()+" ");
+//            System.out.println(h.getName());
         }
         System.out.println(hitList.size());
     }
@@ -597,13 +617,23 @@ public class FileProcessor {
     
     private void cSprintf(Hit hit)
     {
+        System.out.print("S_PRINTF:: ");
+        System.out.print(hit.getRuleValue().getCategory()+" ");
+        System.out.print(hit.getRuleValue().getLevel()+" ");
+        System.out.print(hit.getLine()+" ");
+        System.out.print(hit.getSourcePosition()+" ");
+        System.out.print(hit.getName()+" ");
+        if(!true)
+            return;
         System.out.println("c_sprintf");
         int sourcePosition = hit.getSourcePosition();
         List<String> parameters = hit.getParameters();
         Pattern pDangerousSprintfFormat = Pattern.compile("%-?([0-9]+|\\*)?s");
 //        System.out.println("SOURCE : "+parameters.get(sourcePosition));
+       
         if(parameters==null)
         {
+            System.out.println(true);
             hit.getRuleValue().setWarning("format string parameter problem");
             hit.getRuleValue().setSuggestion("Check if required parameters present and quotes close.");
             hit.getRuleValue().setLevel(4);
@@ -612,37 +642,47 @@ public class FileProcessor {
         }
         else if(sourcePosition<=parameters.size()-1)
         {
+            System.out.println(!true);
             String source = parameters.get(sourcePosition);
 //            System.out.println(cSingletonString(source));
             if(cSingletonString(source))
             {
+                System.out.println("Singleton string");
                 hit.getRuleValue().setLevel(1);
                 hit.setNote("Risk is low because the source is a constant character.");
             }
             else
             {
+                System.out.println("Not Singleton string");
+
                 source = strip_i18n(source);
                 if(cConstantString(source))
                 {
+                    System.out.println("Constant String");
                     Matcher m = pDangerousSprintfFormat.matcher(source);
                     if(!m.find())
                     {
+                        System.out.println("Not found");
                         int level = hit.getRuleValue().getLevel();
                         level = Math.max(level-2, 1);
                         hit.getRuleValue().setLevel(level);
                         hit.setNote("Risk is low because the source has a constant maximum length.");
                     }
-                    else
-                    {
+                }
+                else
+                {
+                        System.out.println("Found");
                         hit.getRuleValue().setWarning("Potential format string problem (CWE-134)");
                         hit.getRuleValue().setSuggestion("Make format string constant");
                         hit.getRuleValue().setLevel(4);
                         hit.getRuleValue().setCategory("format");
                         hit.getRuleValue().setUrl("");
-                    }
                 }
             }
         }
+        else
+            System.out.println(!true);
+
         addWarning(hit);
     }
     

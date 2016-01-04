@@ -552,7 +552,7 @@ public class FlawFinder {
     public static void fileProcessorTest() throws IOException
     {
         Arguments arguments = new Arguments();
-        String fileName = "/home/afif/flawfinder/flawfinder-1.31/test.c";
+        String fileName = "/home/afif/flawfinder/flawfinder-1.31/sloctest.c";
         RuleSet r = HelperFunctions.readRuleSet("/home/afif/flawfinder/flawfinder-1.31/rules.txt");
         r.expandRuleSet();
 //        String a1 = "lstrcpy";
