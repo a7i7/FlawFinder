@@ -244,7 +244,7 @@ public class FileProcessor {
                                         file,
                                         HelperFunctions.getContext(text,startPos),
                                         HelperFunctions.extractCParameters(text,startPos+endPos,arguments.isOutputFormat()),
-                                        arguments.isExtractLookaheadEnabled()?text.substring(startPos,startPos+arguments.getMaxLookahead()):null,
+                                        null,
                                         arguments,""
                                         ); //no notes
                                 if(hit.isExtractLookahead())

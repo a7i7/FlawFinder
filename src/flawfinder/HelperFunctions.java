@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  */
 public class HelperFunctions {
     
-    private static String version = "1.31";
+    public static String version = "1.31";
     
     public static void displayHeader(boolean outputFormat)
     {
