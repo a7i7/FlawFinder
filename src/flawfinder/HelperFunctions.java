@@ -26,6 +26,11 @@ public class HelperFunctions {
     
     public static String version = "1.31";
     
+    public static void printWarning(String s)
+    {
+        System.err.println("Warning: "+s);
+        System.err.flush();
+    }
     public static void displayHeader(boolean outputFormat)
     {
         if(outputFormat)
@@ -275,20 +280,11 @@ public class HelperFunctions {
                 functionName = br.readLine();
                 hook = br.readLine();
                 level = Integer.parseInt(br.readLine());
-//                temp = br.readLine();
                 warning = br.readLine();
                 suggestion = br.readLine();
                 category = br.readLine();
                 unknown = br.readLine();
                 other = parseToDictionary(br.readLine());
-//                temp = br.readLine();
-//                System.out.println(hook);
-//                System.out.println(level);
-//                System.out.println(warning);
-//                System.out.println(suggestion);
-//                System.out.println(category);
-//                System.out.println(unknown);
-//                System.out.println(other);
                 r.addRule(functionName, new RuleValue(hook,level,warning,suggestion,category,unknown,other));
             }
             if(!(br.readLine().equals("END_RULE")))

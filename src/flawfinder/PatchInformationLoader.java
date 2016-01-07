@@ -113,7 +113,6 @@ public class PatchInformationLoader {
         
         while(true)
         {
-//            System.out.println(line);
             line = line+((char)10);
             Matcher fileNameMatch = null;
             if(patchFormat.equals(SVN_PATCH))
@@ -128,12 +127,9 @@ public class PatchInformationLoader {
                 System.exit(1);
             }
             
-//            System.out.println(fileNameMatch.lookingAt());
             if(fileNameMatch.lookingAt())
             {
-//                System.out.println("Yes");
                 newPatchedFileName = fileNameMatch.group("filename").trim();
-//                System.out.println(newPatchedFileName);
                 if(patch.containsKey(newPatchedFileName))
                 {
                     System.out.println("filename occurs more than once in the patch: "+newPatchedFileName);
@@ -144,7 +140,6 @@ public class PatchInformationLoader {
             }
             else
             {
-//                System.out.println("No");
                 Matcher hunkMatch = diffHunk.matcher(line);
                 if(hunkMatch.lookingAt())
                 {
@@ -159,23 +154,16 @@ public class PatchInformationLoader {
                 else
                 {
                     Matcher lineAddedMatch = diffLineAdded.matcher(line);
-//                    System.out.println(line);
                     if(lineAddedMatch.lookingAt())
                     {
-//                        System.out.println("MATCHED");
                         int lineAdded = lineCounter + initialNumber;
                         patch.get(newPatchedFileName).add(lineAdded);
                         patch.get(newPatchedFileName).add(lineAdded-1);
                         patch.get(newPatchedFileName).add(lineAdded+1);
-//                        System.out.println("Added "+lineAdded);
-//                        System.out.println("Added "+(lineAdded-1));
-//                        System.out.println("Added "+(lineAdded+1));
-
                         ++lineCounter;
                     }
                     else
                     {
-//                        System.out.println("NOT MATCHED");
                         Matcher lineDelMatch = diffLineDel.matcher(line);
                         if(!lineDelMatch.lookingAt())
                             ++lineCounter;

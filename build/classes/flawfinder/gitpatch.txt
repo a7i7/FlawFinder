@@ -1,0 +1,12 @@
+diff --git a/spellingCorrector.py b/spellingCorrector.py
+index 15364b9..ff293ae 100644
+--- a/spellingCorrector.py
++++ b/spellingCorrector.py
+@@ -22,7 +22,6 @@ def fix_spelling(input_word):
+ 	word = input_word.lower()
+ 	ans = word
+ 	if word in dictionary:
+-		ans = word
+ 		if input_word.upper()==input_word:
+ 			return ans.upper()
+ 		return ans

@@ -5,10 +5,13 @@
 package flawfinder;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +26,7 @@ import java.util.regex.Pattern;
  * @author afif
  */
 public class FileProcessor {
+
     
     private Arguments arguments;
     Map<String,Set<Integer> > patchInfo;
@@ -31,8 +35,6 @@ public class FileProcessor {
     
     private int lineNumber;
     private int ignoreLine;
-    private int sumLines;
-    private int sloc;
     
     private static Pattern pWhitespace = Pattern.compile("[ \\t\\v\\f]+");
     private static Pattern pInclude = Pattern.compile("#\\s*include\\s+(<.*?>|\".*?\")");
@@ -42,9 +44,7 @@ public class FileProcessor {
     private static Pattern pDirective = Pattern.compile("(?i)\\s*(ITS4|Flawfinder|RATS):\\s*([^\\*]*)");
     private static final int MAX_LOOKAHEAD = 500;
     
-    private static int numIgnoredHits = 0;
-    
-    private static List<Hit> hitList = new ArrayList<Hit>();
+    public static List<Hit> hitList = new ArrayList<Hit>();
     
     public FileProcessor(Arguments arguments,String file,  Map<String,Set<Integer> > patchInfo,RuleSet ruleSet)
     {
@@ -55,7 +55,6 @@ public class FileProcessor {
         
         this.lineNumber = 0;
         this.ignoreLine = -1;
-        this.sumLines = 0;
     }
     
     public void processCFile() throws IOException
@@ -69,9 +68,7 @@ public class FileProcessor {
         inString = 0;
         lineBegin = 1;
         codeInLine = 0;
-        
-        sloc = 0;
-        
+                
         if(patchInfo!=null && !patchInfo.containsKey(file))
         {
             if(!arguments.isQuiet())
@@ -116,11 +113,9 @@ public class FileProcessor {
         {
             text = text+line+"\n";
         }
-        System.out.println(text.length());
         int i = 0;
         while(i<text.length())
         {
-//            System.out.println(i);
             Matcher m = pWhitespace.matcher(text.substring(i));
             char c,nextc;
             if(m.lookingAt())
@@ -145,14 +140,13 @@ public class FileProcessor {
                     continue;
                 }
             }
-//            System.out.println("here "+i);
             if(c=='\n')
             {
                 lineNumber = lineNumber+1;
-                sumLines = sumLines + 1;
+                ++Statistics.SUM_LINES;
                 lineBegin = 1;
                 if(codeInLine!=0)
-                    ++sloc;
+                    ++Statistics.SLOC;
                 codeInLine = 0;
                 ++i;
                 continue;
@@ -181,10 +175,9 @@ public class FileProcessor {
                     inString = 0;
                 else if(c=='\'' && inString==2)
                     inString = 0;
-            }//line 1417
+            }
             else
             {
-//                System.out.println("here "+i);
                 if(c=='/' && nextc=='*')
                 {
                     m = pDirective.matcher(text.substring(i+1));
@@ -222,18 +215,12 @@ public class FileProcessor {
                         i+=endPos-1;
                         String word = "";
                         word = text.substring(startPos,startPos+endPos);
-//                        System.out.println(word);
-//                        System.out.println(startPos+endPos);
-//                        System.out.println(cValidMatch(text,startPos+endPos));
-//                        System.out.println("ERROR "+startPos+" "+endPos);
-//                        System.out.print(" "+ruleSet.hasKey(word)+" ");
+
                         if(ruleSet.hasKey(word) && cValidMatch(text,startPos+endPos))
                         {
                             
                             if(patchInfo==null || (patchInfo.get(file)!=null && patchInfo.get(file).contains(lineNumber)))
                             {
-//                                System.out.print(" HAS");
-                                //hit stuff here
                                 Hit hit = new Hit(
                                         ruleSet.getRule(word),
                                         word,
@@ -249,38 +236,15 @@ public class FileProcessor {
                                         ); //no notes
                                 if(hit.isExtractLookahead())
                                 {
-                                    System.out.println(startPos);
                                     if((startPos+MAX_LOOKAHEAD)>text.length())
                                         hit.setLookahead(text.substring(startPos));
                                     else
                                         hit.setLookahead(text.substring(startPos,startPos+MAX_LOOKAHEAD));
                                         
                                 }
-//                                   System.out.println(hit.getRuleValue().getHook());
-//                                   System.out.println(text.length());
-//                                   System.out.println(startPos+endPos);
-//                                   System.out.println(hit.getParameters().size());
-//                                 System.out.println("SHOWING HIT:"+word);
-//                                 System.out.println(hit);
-                                 if(hit.getRuleValue().getLevel()==0)
-                                 {
-                                     System.out.println("~@~@~@~@~@~@");
-                                     System.exit(0);
-                                 }
-                                 
-                                 if(!true)
-                                 {
-                                    System.out.print("FF:: ");
-                                    System.out.print(hit.getLine()+" ");
-                                    System.out.print(hit.getRuleValue().getLevel()+" ");
-                                    System.out.print(hit.getRuleValue().getCategory()+" ");
-                                    System.out.println(hit.getName());
-                                 }
                                  startHooking(hit);
-//                                 System.out.println(hitList.size());
                             }
                         }
-//                        System.out.println("");
                     }
                     else if(c>='0' && c<='9')
                     {
@@ -292,29 +256,16 @@ public class FileProcessor {
             
         }
         if(codeInLine!=0)
-            ++sloc;
+            ++Statistics.SLOC;
         if(inComment!=0)
             System.out.println("ERROR: File ended while in comment");
         if(inString!=0)
             System.out.println("ERROR: File ended while in string");
         
-        System.out.println("~~~~~~~~~~~~~~~");
-        for (Hit h:hitList)
-        {
-            System.out.println(h);
-//            System.out.print(h.getLine()+" ");
-//            System.out.print(h.getRuleValue().getLevel()+" ");
-//            System.out.print(h.getRuleValue().getCategory()+" ");
-//            System.out.println(h.getName());
-        }
-        System.out.println(hitList.size());
     }
-    
-    
     
     private void processDirective() {
          
-//        System.exit(0);
         if(arguments.isNeverIgnore())
             return;
         boolean hitFound = false;
@@ -325,7 +276,7 @@ public class FileProcessor {
             if(h.getFilename().equals(file) && h.getLine()==lineNumber)
             {
                 hitFound = true;
-                ++numIgnoredHits;
+                ++Statistics.NUM_IGNORED_HITS;
                 it.remove();
             }
         }
@@ -340,12 +291,9 @@ public class FileProcessor {
         char c;
         int i;
         Integer whitespaces[] = {9,10,11,12,13,32};
-//        System.out.println(text.length());
-//        System.out.println(position<text.length());
         for(i = position;i<text.length();)
         {
             c = text.charAt(i);
-//            System.out.println(i+" "+(int)c);
             if(c=='(')
                 return true;
             else if(Arrays.asList(whitespaces).contains((int)c))
@@ -405,7 +353,6 @@ public class FileProcessor {
     
     private void cBuffer(Hit hit)
     {
-        System.out.println("c_buffer");
         String source;
         int sourcePosition = hit.getSourcePosition();
         List<String> parameters = hit.getParameters();
@@ -458,11 +405,9 @@ public class FileProcessor {
     
     private void cStrncat(Hit hit)
     {
-        System.out.println("c_strncat");
         Pattern pDangerousStrncat = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
         Pattern pLooksLikeConstant = Pattern.compile("^\\s*[A-Z][A-Z_$0-9]+\\s*(-\\s*1\\s*)?$");
         Matcher m1,m2 ;
-        System.out.print(hit.getParameters().size()+" ");
         if(hit.getParameters().size()>3)
         {
             String lengthText = hit.getParameters().get(3);
@@ -470,30 +415,23 @@ public class FileProcessor {
             m2 = pLooksLikeConstant.matcher(lengthText);
             if(m1.find() || m2.find())
             {
-                System.out.println("true");
                 hit.getRuleValue().setLevel(5);
                 hit.setNote("Risk is high; the length parameter appears to be a constant, " +
                  "instead of computing the number of characters left.");
                 addWarning(hit);
                 return;
             }
-            else
-                System.out.println("false");
         }
-        else
-            System.out.println("false");
         cBuffer(hit);
     }
     
     private void normal(Hit hit)
     {
-        System.out.println("normal");
         addWarning(hit);
     }
     
     private void cStaticArray(Hit hit)
     {
-        System.out.println("c_static_array");
         Pattern pStaticArray = Pattern.compile("^[A-Za-z_]+\\s+[A-Za-z0-9_$,\\s\\*()]+\\[[^]]");
         Matcher m;
         m = pStaticArray.matcher(hit.getLookahead());
@@ -503,7 +441,6 @@ public class FileProcessor {
     
     private void cMultiByteToWideChar(Hit hit)
     {
-        System.out.println("c_multi_byte_to_wide_char");
         Pattern pDangerousMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+"  +
                                     "\\s*(\\)\\s*)?(-\\s*1\\s*)?$");
         Pattern pSafeMultiByte = Pattern.compile("^\\s*sizeof\\s*(\\(\\s*)?[A-Za-z_$0-9]+\\s*(\\)\\s*)?" +
@@ -534,7 +471,6 @@ public class FileProcessor {
     
     private void cHitIfNull(Hit hit)
     {
-        System.out.println("c_hit_if_null");
         Pattern pNullText = Pattern.compile("^ *(NULL|0|0x0) *$");
         int nullPosition = hit.getCheckForNull();
         if(nullPosition<=(hit.getParameters().size()-1))
@@ -551,15 +487,11 @@ public class FileProcessor {
     
     private void cPrintf(Hit hit)
     {
-        System.out.println("c_printf");
         int formatPosition = hit.getFormatPosition();
         List<String> parameters = hit.getParameters();
         if(formatPosition<=(parameters.size()-1))
         {
             String source = strip_i18n(parameters.get(formatPosition));
-            System.out.println(source);
-            System.out.println(cConstantString(source));
-            System.out.println(hit.getRuleValue().getLevel());
             if(cConstantString(source))
             {
                 if(hit.getName().equals("snprintf") || hit.getName().equals("vsnprintf"))
@@ -577,13 +509,11 @@ public class FileProcessor {
                 }
             }
         }
-        System.out.println(hit.getRuleValue().getLevel());
         addWarning(hit);
     }
     
     private void cScanf(Hit hit)
     {
-        System.out.println("c_scanf");
         int formatPosition = hit.getFormatPosition();
         List<String> parameters = hit.getParameters();
         Pattern pDangerousScanfFormat = Pattern.compile("%s");
@@ -617,23 +547,11 @@ public class FileProcessor {
     
     private void cSprintf(Hit hit)
     {
-        System.out.print("S_PRINTF:: ");
-        System.out.print(hit.getRuleValue().getCategory()+" ");
-        System.out.print(hit.getRuleValue().getLevel()+" ");
-        System.out.print(hit.getLine()+" ");
-        System.out.print(hit.getSourcePosition()+" ");
-        System.out.print(hit.getName()+" ");
-        if(!true)
-            return;
-        System.out.println("c_sprintf");
         int sourcePosition = hit.getSourcePosition();
         List<String> parameters = hit.getParameters();
         Pattern pDangerousSprintfFormat = Pattern.compile("%-?([0-9]+|\\*)?s");
-//        System.out.println("SOURCE : "+parameters.get(sourcePosition));
-       
         if(parameters==null)
         {
-            System.out.println(true);
             hit.getRuleValue().setWarning("format string parameter problem");
             hit.getRuleValue().setSuggestion("Check if required parameters present and quotes close.");
             hit.getRuleValue().setLevel(4);
@@ -642,27 +560,21 @@ public class FileProcessor {
         }
         else if(sourcePosition<=parameters.size()-1)
         {
-            System.out.println(!true);
             String source = parameters.get(sourcePosition);
-//            System.out.println(cSingletonString(source));
             if(cSingletonString(source))
             {
-                System.out.println("Singleton string");
                 hit.getRuleValue().setLevel(1);
                 hit.setNote("Risk is low because the source is a constant character.");
             }
             else
             {
-                System.out.println("Not Singleton string");
 
                 source = strip_i18n(source);
                 if(cConstantString(source))
                 {
-                    System.out.println("Constant String");
                     Matcher m = pDangerousSprintfFormat.matcher(source);
                     if(!m.find())
                     {
-                        System.out.println("Not found");
                         int level = hit.getRuleValue().getLevel();
                         level = Math.max(level-2, 1);
                         hit.getRuleValue().setLevel(level);
@@ -671,7 +583,6 @@ public class FileProcessor {
                 }
                 else
                 {
-                        System.out.println("Found");
                         hit.getRuleValue().setWarning("Potential format string problem (CWE-134)");
                         hit.getRuleValue().setSuggestion("Make format string constant");
                         hit.getRuleValue().setLevel(4);
@@ -680,15 +591,12 @@ public class FileProcessor {
                 }
             }
         }
-        else
-            System.out.println(!true);
 
         addWarning(hit);
     }
     
     private void addWarning(Hit hit)
     {
-        System.out.println("add_warning");
         if(arguments.isShowInputs() && hit.getInput()==0)
             return;
         Pattern requiredRegex = arguments.getRequiredRegex();
@@ -701,7 +609,7 @@ public class FileProcessor {
         if(hit.getRuleValue().getLevel()>=arguments.getMinimumLevel())
         {
             if(lineNumber==ignoreLine)
-                ++numIgnoredHits;
+                ++Statistics.NUM_IGNORED_HITS;
             else
             {
                 hitList.add(hit);

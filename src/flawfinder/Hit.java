@@ -4,6 +4,8 @@
  */
 package flawfinder;
 
+import java.io.Serializable;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +36,7 @@ import java.util.Map;
     context_text: text surrounding hit
  * @author afif
  */
-public class Hit {
+public class Hit implements Serializable{
     
     private RuleValue ruleValue;
     private String name;
@@ -102,7 +104,75 @@ public class Hit {
         
     }
     
+    public int compareTo(Hit h)
+    {
+        int c;
+        Integer thisLevel = new Integer(this.getRuleValue().getLevel());
+        Integer otherLevel = new Integer(h.getRuleValue().getLevel());
+        c = otherLevel.compareTo(thisLevel);
+        if(c!=0)
+            return c;
+        
+        String thisFilename = this.getFilename();
+        String otherFilename = h.getFilename();
+        c = thisFilename.compareTo(otherFilename);
+        if(c!=0)
+            return c;
+        
+        Integer thisLine = this.getLine();
+        Integer otherLine = h.getLine();
+        c = thisLine.compareTo(otherLine);
+        if(c!=0)
+            return c;
+        
+        Integer thisColumn = this.getColumn();
+        Integer otherColumn = h.getColumn();
+        c = thisColumn.compareTo(otherColumn);
+        if(c!=0)
+            return c;
+        
+        String thisName = this.getName();
+        String otherName = h.getName();
+        c = thisName.compareTo(otherName);
+        return c;
+    }
     
+    public static Comparator<Hit> hitComparator  =new Comparator<Hit>()
+    {
+        @Override
+        public int compare(Hit g,Hit h)
+        {
+            int c;
+            Integer thisLevel = new Integer(g.getRuleValue().getLevel());
+            Integer otherLevel = new Integer(h.getRuleValue().getLevel());
+            c = otherLevel.compareTo(thisLevel);
+            if(c!=0)
+                return c;
+
+            String thisFilename = g.getFilename();
+            String otherFilename = h.getFilename();
+            c = thisFilename.compareTo(otherFilename);
+            if(c!=0)
+                return c;
+
+            Integer thisLine = g.getLine();
+            Integer otherLine = h.getLine();
+            c = thisLine.compareTo(otherLine);
+            if(c!=0)
+                return c;
+
+            Integer thisColumn = g.getColumn();
+            Integer otherColumn = h.getColumn();
+            c = thisColumn.compareTo(otherColumn);
+            if(c!=0)
+                return c;
+
+            String thisName = g.getName();
+            String otherName = h.getName();
+            c = thisName.compareTo(otherName);
+            return c;
+        }
+    };
     
     @Override
     public String toString()
@@ -411,4 +481,10 @@ public class Hit {
     public void setCheckForNull(int checkForNull) {
         this.checkForNull = checkForNull;
     }
+
+//    @Override
+//    public int compare(Hit arg0, Hit arg1) {
+//        throw new UnsupportedOperationException("Not supported yet.");
+//    }
+
 }

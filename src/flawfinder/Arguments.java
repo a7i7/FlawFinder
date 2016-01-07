@@ -9,6 +9,7 @@ import jargs.gnu.CmdLineParser.IllegalOptionValueException;
 import jargs.gnu.CmdLineParser.Option.BooleanOption;
 import jargs.gnu.CmdLineParser.Option.StringOption;
 import jargs.gnu.CmdLineParser.UnknownOptionException;
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,7 +17,7 @@ import java.util.regex.Pattern;
  *
  * @author afif
  */
-public class Arguments {
+public class Arguments implements Serializable{
     
     private boolean showContext;
     private boolean showInputs;
@@ -86,7 +87,7 @@ public class Arguments {
         }
         catch(IllegalOptionValueException e)
         {
-            System.out.println("ILLEGEAL");
+            System.out.println("ILLEGAL");
 //            System.out.println(HelperFunctions.usage());
             System.exit(0);
         }
@@ -97,8 +98,6 @@ public class Arguments {
         }
         
         String [] otherArgs = parser.getRemainingArgs();
-        for(String s:otherArgs)
-            System.out.println(s);
         
         this.showContext = parser.getOptionValue(context)!=null;
         this.showColumns = parser.getOptionValue(columns)!=null;
@@ -167,7 +166,7 @@ public class Arguments {
         }
         
         String diffHitListFile = (String) parser.getOptionValue(diffHitList);
-        if(diffHitList!=null)
+        if(diffHitListFile!=null)
         {
             this.diffHitList = diffHitListFile;
             displayHeader();
@@ -204,7 +203,7 @@ public class Arguments {
         this.showColumns = false;
         this.neverIgnore = false;
         this.listRules = false;
-        this.patchFile = "";
+        this.patchFile = null;
         this.loadHitList = null;
         this.saveHitList = null;
         this.diffHitList = null;
@@ -539,7 +538,7 @@ public class Arguments {
         this.requiredRegexCompiled = requiredRegexCompiled;
     }
 
-    private void displayHeader() {
+    public void displayHeader() {
         if(!this.showHeading)
             return;
         if(!this.displayedHeader)
@@ -578,84 +577,97 @@ public class Arguments {
            "[--html | -H] [--immediate | -i] [--singleline | -S]\n"+
            "[--omittime] [--quiet | -Q]\n"+
   "[--loadhitlist F] [--savehitlist F] [--diffhitlist F]\n"+
-  "[--] [source code file or source root directory]";
-/*
-  The options cover various aspects of flawfinder as follows.
+  "[--] [source code file or source root directory]"+ "\n"+
 
-  Documentation:
-  --help | -h Show this usage help.
-  --version   Show version number.
-  --listrules List the rules in the ruleset (rule database).
+  "The options cover various aspects of flawfinder as follows."+"\n"+
 
-  Selecting Input Data:
-  --allowlink Allow symbolic links.
-  --followdotdir
-              Follow directories whose names begin with ".".
-              Normally they are ignored.
-  --nolink    Skip symbolic links (ignored).
-  --patch F | -P F
-              Display information related to the patch F
-              (patch must be already applied).
+  "Documentation:"+"\n"+
+  "--help | -h Show this usage help."+"\n"+
+  "--version   Show version number."+"\n"+
+  "--listrules List the rules in the ruleset (rule database)."+"\n"+
 
-  Selecting Hits to Display:
-  --inputs | -I
-              Show only functions that obtain data from outside the program;
-              this also sets minlevel to 0.
-  -m X | --minlevel=X
-              Set minimum risk level to X for inclusion in hitlist.  This
-              can be from 0 (``no risk'')  to  5  (``maximum  risk'');  the
-              default is 1.
-  --falsepositive | -F
-              Do not include hits that are likely to be false  positives.
-              Currently,  this  means  that function names are ignored if
-              they're not followed by "(", and that declarations of char-
-              acter  arrays  aren't noted.  Thus, if you have use a vari-
-              able named "access" everywhere, this will eliminate  refer-
-              ences  to  this ordinary variable.  This isn't the default,
-              because this  also  increases  the  likelihood  of  missing
-              important  hits;  in  particular, function names in #define
-              clauses and calls through function pointers will be missed.
-  --neverignore | -n
-              Never ignore security issues, even if they have an ``ignore''
-              directive in a comment.
-  --regex PATTERN | -e PATTERN
-              Only report hits that match the regular expression PATTERN.
+  "Selecting Input Data:"+"\n"+
+  "--allowlink Allow symbolic links."+"\n"+
+  "--followdotdir"+"\n"+
+              "Follow directories whose names begin with \".\".\n"+
+              "Normally they are ignored.\n"+
+  "--nolink    Skip symbolic links (ignored).\n"+
+  "--patch F | -P F"+"\n"+
+              "Display information related to the patch F"+"\n"+
+              "(patch must be already applied)."+"\n"+
 
-  Selecting Output Format:
-  --columns | -C
-              Show  the  column  number  (as well as the file name and
-              line number) of each hit; this is shown after the line number
-              by adding a colon and the column number in the line (the first
-              character in a line is column number 1).
-  --context | -c
-              Show context (the line having the "hit"/potential flaw)
-  --dataonly | -D
-              Don't display the headers and footers of the analysis;
-              use this along with --quiet to get just the results.
-  --html | -H
-              Display as HTML output.
-  --immediate | -i
-              Immediately display hits (don't just wait until the end).
-  --singleline | -S
-              Single-line output.
-  --omittime  Omit time to run.
-  --quiet | -Q
-              Don't display status information (i.e., which files are being
-              examined) while the analysis is going on.
+  "Selecting Hits to Display:"+"\n"+
+  "--inputs | -I"+"\n"+
+              "Show only functions that obtain data from outside the program;"+"\n"+
+              "this also sets minlevel to 0."+"\n"+
+  "-m X | --minlevel=X"+"\n"+
+              "Set minimum risk level to X for inclusion in hitlist.  This"+"\n"+
+              "can be from 0 (``no risk'')  to  5  (``maximum  risk'');  the"+"\n"+
+              "default is 1."+"\n"+
+  "--falsepositive | -F"+"\n"+
+              "Do not include hits that are likely to be false  positives."+"\n"+
+              "Currently,  this  means  that function names are ignored if"+"\n"+
+              "they're not followed by \"(\", and that declarations of char-"+"\n"+
+              "acter  arrays  aren't noted.  Thus, if you have use a vari-"+"\n"+
+              "able named \"access\" everywhere, this will eliminate  refer-"+"\n"+
+              "ences  to  this ordinary variable.  This isn't the default,"+"\n"+
+              "because this  also  increases  the  likelihood  of  missing"+"\n"+
+              "important  hits;  in  particular, function names in #define"+"\n"+
+              "clauses and calls through function pointers will be missed."+"\n"+
+  "--neverignore | -n"+"\n"+
+              "Never ignore security issues, even if they have an ``ignore''"+"\n"+
+              "directive in a comment."+"\n"+
+  "--regex PATTERN | -e PATTERN"+"\n"+
+              "Only report hits that match the regular expression PATTERN."+"\n"+
+  "Selecting Output Format:"+"\n"+
+  "--columns | -C"+"\n"+
+              "Show  the  column  number  (as well as the file name and"+"\n"+
+              "line number) of each hit; this is shown after the line number"+"\n"+
+              "by adding a colon and the column number in the line (the first"+"\n"+
+              "character in a line is column number 1)."+"\n"+
+  "--context | -c"+"\n"+
+              "Show context (the line having the \"hit\"/potential flaw)"+"\n"+
+  "--dataonly | -D"+"\n"+
+              "Don't display the headers and footers of the analysis;"+"\n"+
+              "use this along with --quiet to get just the results."+"\n"+
+  "--html | -H"+"\n"+
+              "Display as HTML output."+"\n"+
+  "--immediate | -i"+"\n"+
+              "Immediately display hits (don't just wait until the end)."+"\n"+
+  "--singleline | -S"+"\n"+
+              "Single-line output."+"\n"+
+  "--omittime  Omit time to run."+"\n"+
+  "--quiet | -Q"+"\n"+
+              "Don't display status information (i.e., which files are being"+"\n"+
+              "examined) while the analysis is going on."+"\n"+
 
-  Hitlist Management:
-  --savehitlist=F
-              Save all hits (the "hitlist") to F.
-  --loadhitlist=F
-              Load hits from F instead of analyzing source programs.
-  --diffhitlist=F
-              Show only hits (loaded or analyzed) not in F.
+  "Hitlist Management:"+"\n"+
+  "--savehitlist=F"+"\n"+
+              "Save all hits (the \"hitlist\") to F."+"\n"+
+  "--loadhitlist=F"+"\n"+
+             " Load hits from F instead of analyzing source programs."+"\n"+
+  "--diffhitlist=F"+"\n"+
+              "Show only hits (loaded or analyzed) not in F."+"\n"+
 
 
-  For more information, please consult the manpage or available
-  documentation.
-";*/
-           
+  "For more information, please consult the manpage or available"+"\n"+
+  "documentation.";
+        System.out.println(USAGE_STRING);
+        return;
+    }
+
+    /**
+     * @return the fileList
+     */
+    public String[] getFileList() {
+        return fileList;
+    }
+
+    /**
+     * @param fileList the fileList to set
+     */
+    public void setFileList(String[] fileList) {
+        this.fileList = fileList;
     }
 
     

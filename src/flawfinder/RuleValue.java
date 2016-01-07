@@ -4,6 +4,7 @@
  */
 package flawfinder;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +12,7 @@ import java.util.Map;
  *
  * @author afif
  */
-public class RuleValue {
+public class RuleValue implements Serializable{
     private String hook;
     private int level;
     private String warning;
@@ -70,11 +71,7 @@ public class RuleValue {
      * @param level the level to set
      */
     public void setLevel(int level) {
-        if(level==0)
-        {
-            System.out.println("BWAHA");
-//            System.exit(0);
-        }
+
         this.level = level;
     }
 

@@ -4,6 +4,7 @@
  */
 package flawfinder;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,7 +15,7 @@ import java.util.Map;
  *
  * @author afif
  */
-public class RuleSet {
+public class RuleSet implements Serializable{
     
     private Map<String,RuleValue> ruleSetMap;
     
@@ -51,7 +52,6 @@ public class RuleSet {
             {
                 for(String newRule: rule.split("\\|"))
                 {
-//                    System.out.println(newRule);
                     if(ruleSetMap.get(newRule)!=null)
                     {
                         System.out.println("Error: Rule "+rule+" when expanded overlaps "+newRule);
@@ -59,11 +59,8 @@ public class RuleSet {
                     }
                     RuleValue copyRuleValue = new RuleValue(ruleSetMap.get(rule)); 
                     ruleSetMap.put(newRule, copyRuleValue);
-//                    ruleSetMap.put(newRule, ruleSetMap.get(rule));
-//                    System.out.println("Put "+newRule);
                 }
                 ruleSetMap.remove(rule);
-//                System.out.println("Removed "+rule);
 
 
             }
